@@ -20,7 +20,7 @@ contract SupplyChain {
             7 = Retailer; 
             8 = Consumer;
         */
-        uint stageConfirms; 
+        uint stageConfirms;
     }
 
     Item[] items;

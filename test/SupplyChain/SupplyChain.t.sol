@@ -2,7 +2,7 @@
 pragma solidity ^0.8.13;
 
 import "forge-std/Test.sol";
-import "../src/SupplyChain/SupplyChain.sol";
+import "../../src/SupplyChain/SupplyChain.sol";
 
 contract SupplyChainTest is Test {
     SupplyChain public supChain;
