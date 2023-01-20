@@ -68,6 +68,22 @@ contract SupplyChainTest is Test {
         SupplyChain.Agreement memory agreement = supChain.getItem(0);
     }
 
+    function test_AgreementX() external {
+        uint id = supChain.createNewAgreementX("Bestest Item Ever");
+        supChain.setItemStatusX(id,true, id, 0); // Set stageConfirmations[1] to true
+        supChain.setItemStatusX(id,false, 0, 1); // sets stagePaid for stageConfirmations[0] to be false
+        supChain.setItemStatusX(id,true, 1, 1); // sets stagePaid for stageConfirmations[1] to be true
+        assertEq(supChain.getStageStatusX(id, 0, 1), false);
+        assertEq(supChain.getStageStatusX(id, 1, 1), true);
+        assertEq(supChain.getStageStatusX(id, 2, 1), false);
+
+        assertEq(supChain.getStageStatusX(id, 0, 2), false);
+
+        supChain.getItemX(id);
+    }
+
+
+
 
 
 }

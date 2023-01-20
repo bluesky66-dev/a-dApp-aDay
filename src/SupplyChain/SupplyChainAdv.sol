@@ -130,11 +130,62 @@ contract SupplyChain {
     | setItemStatus  | 7620            | 16353 | 20720  | 20720 | 3       |
     */
     
-    
+    struct AgreementX {
+        Stages stageConfirms;
+        bool[] stagesPaid;
+        bool[] stagesErrors;
+        bytes itemName;
+    }
+
+    AgreementX[] Xitems;
+
     enum Stages {Supplier, Manufacturer, Warehouse, FreightForwarder, Carrier, Customs, Distributor, Retailer, Consumer}
+    
     mapping(uint => Stages) public itemtoStage;
+
+    function createNewAgreementX(bytes calldata _name) external returns(uint) {
+        AgreementX memory item = AgreementX({
+            stageConfirms: Stages.Consumer,
+            stagesPaid: new bool[](uint(Stages.Consumer)),
+            stagesErrors: new bool[](uint(Stages.Consumer)),
+            itemName: _name
+        });
+        Xitems.push(item);
+
+        return Xitems.length - 1;
+    }
+
+    function setItemStatusX(uint _id, bool _status, uint _index, uint _info) external {
+        if(_info == 0) {
+            Xitems[_id].stageConfirms = Stages(_index);
+        } else if (_info == 1) {
+            Xitems[_id].stagesPaid[_index] = _status;
+        } else if (_info == 2) {
+            Xitems[_id].stagesErrors[_index] = _status;
+        } else {
+            revert WrongStep();
+        }
+    }
+
+    function getStageStatusX(uint _id, uint _index, uint _info) external view returns (bool) {
+        if(_info == 0) {
+            return Xitems[_id].stageConfirms == Stages(_index);
+        } else if (_info == 1) {
+            return Xitems[_id].stagesPaid[_index];
+        } else if (_info == 2) {
+            return Xitems[_id].stagesErrors[_index];
+        } else {
+            revert WrongStep();
+        }
+    }    
+
+    function getItemX(uint _id) external view returns (AgreementX memory) {
+        return Xitems[_id];
+    }
+
 
     function setItemStages(uint _itemId, uint id) external {
         itemtoStage[_itemId] = Stages(id);
     }
+
 }
