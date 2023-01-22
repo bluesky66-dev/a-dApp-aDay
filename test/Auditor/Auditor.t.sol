@@ -40,7 +40,7 @@ contract AuditorTest is Test {
             uint256 medium,
             uint256 high,
             uint256 auditId
-        ) = auditor.audits(0);
+        ) = auditor.audits(1);
 
         assertEq(submitter, vm.addr(1));
         assertEq(isReviewed, false);
@@ -50,7 +50,7 @@ contract AuditorTest is Test {
         assertEq(low, 0);
         assertEq(medium, 0);
         assertEq(high, 0);
-        assertEq(auditId, 0);
+        assertEq(auditId, 1);
         assertEq(vm.addr(1).balance, (1 ether / 2));
     }
 
@@ -67,12 +67,12 @@ contract AuditorTest is Test {
         auditor.registerAuditor(vm.addr(1));
 
         (
-            address _auditor, 
-            uint numberOfSubmits, 
-            uint highs, 
-            uint meds,
-            uint lows, 
-            uint total,
+            address _auditor,
+            uint256 numberOfSubmits,
+            uint256 highs,
+            uint256 meds,
+            uint256 lows,
+            uint256 total,
             bool isActive
         ) = auditor.auditorDetails(0);
 
@@ -85,22 +85,19 @@ contract AuditorTest is Test {
         assertEq(isActive, true);
         assertEq(vm.addr(1).balance, 1 ether);
 
-
-
         vm.deal(vm.addr(2), 0.02 ether);
         vm.prank(vm.addr(2));
         auditor.registerAuditor{value: 0.01 ether}(vm.addr(2));
 
         (
-            address auditor_, 
-            uint numberOfSubmits_, 
-            uint highs_, 
-            uint meds_,
-            uint lows_, 
-            uint total_,
+            address auditor_,
+            uint256 numberOfSubmits_,
+            uint256 highs_,
+            uint256 meds_,
+            uint256 lows_,
+            uint256 total_,
             bool isActive_
         ) = auditor.auditorDetails(1);
-
 
         assertEq(auditor_, vm.addr(2));
         assertEq(numberOfSubmits_, 0);
@@ -110,7 +107,34 @@ contract AuditorTest is Test {
         assertEq(total_, 0);
         assertEq(isActive_, true);
         assertEq(vm.addr(2).balance, 0.01 ether);
-
     }
 
+    function test_assignAudit() external {
+        bytes memory name = "0xKeyrxng Protocol";
+        bytes memory comments_ = "0x This is a test";
+        bytes memory repo = "https://github.com/Keyrxng";
+        vm.deal(vm.addr(1), 1 ether);
+
+        vm.prank(vm.addr(1));
+
+        auditor.requestAudit{value: (1 ether / 2)}(name, comments_, repo);
+
+        vm.deal(vm.addr(2), 1 ether);
+
+        vm.prank(vm.addr(2));
+
+        auditor.registerAuditor(vm.addr(2));
+
+        vm.deal(vm.addr(3), 1 ether);
+
+        vm.prank(vm.addr(3));
+
+        auditor.requestAudit{value: (1 ether / 2)}(name, comments_, repo);
+
+        vm.startPrank(vm.addr(2));
+        auditor.assignAudit(1);
+        auditor.assignAudit(2);
+
+        assertEq(auditor.auditorQueue(vm.addr(2)), 2);
+    }
 }
