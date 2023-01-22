@@ -16,6 +16,8 @@ contract Auditor {
 
     uint public auditID; // auto incremented ID for newly submitted audit (for review by auditors) to keep track of the list - will be used as indexes to the mappings
     uint public auditFee; // to be set by the audit team, this is the fee each contract submission will cost
+    uint public auditorID; // auto incremented ID for newly added auditor
+    uint public auditorRegFee; // set by the audit team, this is the fee for auditors to register with the system as a valid member of team
 
     mapping(uint=>bytes) public sourceCodes; // a mapping to store the full source code for a submitted contract (Repo URL or similar) (includes main and all associated contract files)
     mapping(uint=>mapping(uint=>bytes)) public lows; // mapping to store the list of all submitted low severity contract audit issues
@@ -23,9 +25,11 @@ contract Auditor {
     mapping(uint=>mapping(uint=>bytes)) public high; // mapping to store the list of all submitted high severity contract audit issues
 
     mapping(uint=>audit) public audits; // mapping to store the list of submitted audit for review details
-    mapping(uint=>address) public auditor; // mapping to store the Ethereum address of the auditor who reviewed the code for a contract
+    mapping(uint=>address) public auditorIDToAddr; // mapping to store the Ethereum address of the auditor who reviewed the code for a contract
+    mapping(address=>uint) public auditorAddrToID; // a list of all auditors and their audit IDs - will be used as indexes to the mappings
 
     audit[] public auditQueue; // a queue to keep a list of submitted audits for auditors to pick and review next
+    accAuditor[] public auditorDetails; // details of each auditor
     mapping(address=>uint) public auditorQueue; // a queue that stores the number of code reviews an auditor has currently, allowing audits to be assigned to auditors
 
     event SourceCodeSubmitted (uint indexed auditId, address submitter, string indexed protocolName); // emitted when a contract source code is submitted for review
@@ -40,6 +44,16 @@ contract Auditor {
     modifier onlyManager {
         require(msg.sender == Manager, "not Manager");
         _;
+    }
+
+    struct accAuditor {
+        address auditor; // Address of the auditor
+        uint numberOfSubmits; // Number of audits a user has submitted (useful if one auditor submits several audits in one go)
+        uint highs; // The total number of high severity issues raised by an auditor across all audits
+        uint meds; // The total number of medium severity issues raised by an auditor across all audits
+        uint lows; // The total number of low severity issues raised by an auditor across all audits
+        uint total; // The total number of issues raised by an auditor across all audits
+        bool isActive; // Whether an auditor is still an active member of the team or not
     }
 
     struct audit {
@@ -85,7 +99,6 @@ contract Auditor {
 
     function setAuditFee(uint _amount) public onlyManager {
         auditFee = _amount;
-
     }
 
     /**
@@ -103,6 +116,50 @@ contract Auditor {
         if(cost == 0) {
             return (1 ether / 2);
         }
+        return cost;
+    }
+
+
+    /**
+        * @notice registers a new auditor
+        * @param newAuditor address of the new auditor
+        * @dev can only be set by Manager
+    */
+
+    function registerAuditor(address newAuditor) public payable {
+        if(msg.value < getAuditorCost()){
+            revert  InsufficientValue({ required: getAuditorCost(), got:msg.value });
+        }
+
+        auditorDetails.push(accAuditor({auditor: newAuditor, numberOfSubmits: 0, highs: 0, meds: 0, lows: 0, total: 0, isActive: true}));
+        auditorID++;
+        auditorAddrToID[newAuditor] = auditorID;
+        auditorIDToAddr[auditorID] = newAuditor;
+
+    }
+
+    /**
+        * @notice sets the price for auditors to register in the system
+        * @param _amount the amount of the chosen cryptocurrency to be payed
+        * @dev can only be set by Manager
+    */
+
+    function setAuditorFee(uint _amount) public onlyManager {
+        auditorRegFee = _amount;
+    }
+
+    /**
+        * @notice given the amount of auditors in the registry determines the fee for registering, increasing expoentially with more auditors
+        * @return the fee for registering an auditor based on the amount of auditors in the system
+        * Example: auditorRegFee == 0.1, auditorID = 250, cost = 0.1 * 250 / 5 = 5 ETH
+        * Example: auditorRegFee == 0.1, auditorID = 99, cost = 0.1 * 99 / 5 = 1.8 ETH
+        * Example: auditorRegFee == 0.1, auditorID = 10, cost = 0.1 * 10 / 5 = 0.2 ETH
+        * Example: auditorRegFee == 0.1, auditorID = 1, cost = 0.1 * 1 / 5 = 0.02 ETH
+        * Example: auditorRegFee == 0.1, auditorID = 0, cost = 0.1 * 0 / 5 = 0 ETH        
+    */
+
+    function getAuditorCost() public view returns (uint) {
+        uint cost = auditorRegFee * auditorDetails.length / 5; // auditor registration fee * number of accounts registered / factor by which fee will increase
         return cost;
     }
 

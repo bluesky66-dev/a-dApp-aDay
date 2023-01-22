@@ -54,4 +54,63 @@ contract AuditorTest is Test {
         assertEq(vm.addr(1).balance, (1 ether / 2));
     }
 
+    function test_SetAuditorFee() external {
+        auditor.setAuditorFee(0.01 ether);
+        assertEq(auditor.auditorRegFee(), 0.01 ether);
+    }
+
+    function test_RegisterAuditor() external {
+        vm.deal(vm.addr(1), 1 ether);
+
+        vm.prank(vm.addr(1));
+
+        auditor.registerAuditor(vm.addr(1));
+
+        (
+            address _auditor, 
+            uint numberOfSubmits, 
+            uint highs, 
+            uint meds,
+            uint lows, 
+            uint total,
+            bool isActive
+        ) = auditor.auditorDetails(0);
+
+        assertEq(_auditor, vm.addr(1));
+        assertEq(numberOfSubmits, 0);
+        assertEq(highs, 0);
+        assertEq(meds, 0);
+        assertEq(lows, 0);
+        assertEq(total, 0);
+        assertEq(isActive, true);
+        assertEq(vm.addr(1).balance, 1 ether);
+
+
+
+        vm.deal(vm.addr(2), 0.02 ether);
+        vm.prank(vm.addr(2));
+        auditor.registerAuditor{value: 0.01 ether}(vm.addr(2));
+
+        (
+            address auditor_, 
+            uint numberOfSubmits_, 
+            uint highs_, 
+            uint meds_,
+            uint lows_, 
+            uint total_,
+            bool isActive_
+        ) = auditor.auditorDetails(1);
+
+
+        assertEq(auditor_, vm.addr(2));
+        assertEq(numberOfSubmits_, 0);
+        assertEq(highs_, 0);
+        assertEq(meds_, 0);
+        assertEq(lows_, 0);
+        assertEq(total_, 0);
+        assertEq(isActive_, true);
+        assertEq(vm.addr(2).balance, 0.01 ether);
+
+    }
+
 }
