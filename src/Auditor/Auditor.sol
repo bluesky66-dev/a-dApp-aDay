@@ -142,9 +142,9 @@ contract Auditor {
         }
 
         auditorDetails.push(accAuditor({auditor: newAuditor, numberOfSubmits: 0, highs: 0, meds: 0, lows: 0, total: 0, isActive: true}));
-        auditorID++;
         auditorAddrToID[newAuditor] = auditorID;
         auditorIDToAddr[auditorID] = newAuditor;
+        auditorID++;
 
     }
 
